@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Cognito - Fullscreen for Claude Artifacts",
+  "version": "1.0.0",
+  "description": "Expand Claude artifacts edge-to-edge. No frame, no clutter. Press Esc to restore.",
+  "homepage_url": "https://github.com/semicognito/cognito-fullscreen",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/chat/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}
