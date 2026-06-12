@@ -18,7 +18,7 @@
 
 > Coming soon — pending review.
 
-**Manual install** 
+**Manual install**
 
 1. Clone or download this repository
 2. Open `chrome://extensions` in Chrome
@@ -29,9 +29,13 @@
 
 A small toggle button appears in the top-right corner whenever a Claude artifact is visible. Click it to expand the artifact to fill your entire browser window. Click again or press **Esc** to restore.
 
-<!-- Screenshots go here once captured -->
-<!-- ![Before — artifact in default layout](assets/screenshot-before.png) -->
-<!-- ![After — artifact fullscreen](assets/screenshot-after.png) -->
+<p align="center">
+  <img src="assets/01-before.png" alt="Before — artifact in default Claude layout" width="800">
+</p>
+
+<p align="center">
+  <img src="assets/02-after.png" alt="After — artifact fullscreen" width="800">
+</p>
 
 ## How it works
 
