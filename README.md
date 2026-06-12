@@ -18,7 +18,7 @@
 
 > Coming soon — pending review.
 
-**Manual install** (for developers)
+**Manual install** 
 
 1. Clone or download this repository
 2. Open `chrome://extensions` in Chrome
@@ -60,5 +60,5 @@ This extension collects no data. None. See the full [privacy policy](PRIVACY.md)
 ---
 
 <p align="center">
-  Made by <a href="https://github.com/semicognito">Semicognito</a>
+  Made by <a href="https://github.com/semicognito">semicognito</a>
 </p>
