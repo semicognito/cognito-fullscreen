@@ -16,6 +16,13 @@
 
 (() => {
   const IFRAME_SELECTOR = 'iframe[src*="claudeusercontent.com"]';
+  const ALLOWED_PATHS = ["/chat", "/new"];
+
+  function onAllowedPage() {
+    const p = location.pathname;
+    return ALLOWED_PATHS.some((a) => p === a || p.startsWith(a + "/"));
+  }
+
   const NEUTRALIZE = [
     ["transform", "none"],
     ["perspective", "none"],
@@ -94,7 +101,7 @@
   }
 
   function maximize() {
-    if (state) return;
+    if (state || !onAllowedPage()) return;
     const iframe = findArtifactIframe();
     if (!iframe) return;
 
@@ -139,7 +146,8 @@
   function syncButton() {
     if (!button) return;
 
-    const display = state || artifactIframeExists() ? "" : "none";
+    const display =
+      state || (onAllowedPage() && artifactIframeExists()) ? "" : "none";
     if (button.style.display !== display) button.style.display = display;
 
     const mode = state ? "restore" : "maximize";
