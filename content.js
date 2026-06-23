@@ -12,11 +12,20 @@
  *     letting the backdrop paint on top. Those are neutralized too.
  *  4. The page observer must never react to mutations this extension
  *     makes, and must never do layout-forcing work synchronously.
+ *  5. The toggle button is anchored to the artifact iframe, not the
+ *     viewport, so it tracks the native toolbar/close-X in any layout
+ *     (e.g. pushed down by the incognito banner) and never collides.
  */
 
 (() => {
   const IFRAME_SELECTOR = 'iframe[src*="claudeusercontent.com"]';
   const ALLOWED_PATHS = ["/chat", "/new"];
+
+  // ---- Button placement (all px) ----
+  const RIGHT_GAP = 14; // docked: distance from the right edge
+  const TOP_GAP_NORMAL = 4; // docked: relative to the iframe's top edge
+  const RIGHT_GAP_MAX = 12; // fullscreen: distance from the right edge
+  const TOP_GAP_MAX = 12; // fullscreen: distance from the top
 
   function onAllowedPage() {
     const p = location.pathname;
@@ -143,11 +152,33 @@
     syncButton();
   }
 
+  // Anchor to the artifact iframe's top-right corner. Reads layout (docked
+  // only) then writes once; called from the throttled queueSync path.
+  function positionButton() {
+    if (!button) return;
+
+    let top, right;
+    if (state) {
+      top = TOP_GAP_MAX;
+      right = RIGHT_GAP_MAX;
+    } else {
+      const iframe = findArtifactIframe();
+      if (!iframe) return;
+      top = Math.max(0, Math.round(iframe.getBoundingClientRect().top + TOP_GAP_NORMAL));
+      right = RIGHT_GAP;
+    }
+
+    const topPx = top + "px";
+    const rightPx = right + "px";
+    if (button.style.top !== topPx) button.style.top = topPx;
+    if (button.style.right !== rightPx) button.style.right = rightPx;
+  }
+
   function syncButton() {
     if (!button) return;
 
-    const display =
-      state || (onAllowedPage() && artifactIframeExists()) ? "" : "none";
+    const visible = state || (onAllowedPage() && artifactIframeExists());
+    const display = visible ? "" : "none";
     if (button.style.display !== display) button.style.display = display;
 
     const mode = state ? "restore" : "maximize";
@@ -162,6 +193,8 @@
         ? "Restore artifact (Esc)"
         : "Expand artifact edge-to-edge";
     }
+
+    if (visible) positionButton();
   }
 
   document.addEventListener(
@@ -208,6 +241,10 @@
   function init() {
     ensureButton();
     pageObserver.observe(document.body, { childList: true, subtree: true });
+    // Reposition on layout shifts the observer won't catch (docked anchor
+    // tracks the iframe's top). Capture scroll so nested containers are seen.
+    window.addEventListener("resize", queueSync, { passive: true });
+    window.addEventListener("scroll", queueSync, { passive: true, capture: true });
     setInterval(queueSync, 2000);
   }
 
