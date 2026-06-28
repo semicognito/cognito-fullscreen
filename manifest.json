@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Cognito - Fullscreen for Claude Artifacts",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Expand Claude artifacts edge-to-edge. No frame, no clutter. Press Esc to restore.",
   "homepage_url": "https://github.com/semicognito/cognito-fullscreen",
   "icons": {
