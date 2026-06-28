@@ -15,6 +15,9 @@
  *  5. The toggle button is anchored to the artifact iframe, not the
  *     viewport, so it tracks the native toolbar/close-X in any layout
  *     (e.g. pushed down by the incognito banner) and never collides.
+ *  6. Claude's own modals (e.g. the "open external link?" confirm) render
+ *     in the page at a normal z-index; while maximized the iframe buries
+ *     them, so they are lifted above it and restored exactly on exit.
  */
 
 (() => {
@@ -55,8 +58,11 @@
     SVG_OPEN +
     '<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
 
+  const Z_OVERLAY = 2147483640; // above the maximized iframe (z 2147483600 in content.css)
+
   let state = null;
   let button = null;
+  let liftedOverlays = [];
 
   function artifactIframeExists() {
     return !!document.querySelector(IFRAME_SELECTOR);
@@ -109,6 +115,46 @@
     }
   }
 
+  function isOursOrShell(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (button && (el === button || button.contains(el))) return true;
+    if (state && state.backdrop && el === state.backdrop) return true;
+    if (state && state.iframe && (el === state.iframe || el.contains(state.iframe))) return true;
+    return false;
+  }
+
+  function liftableAncestor(el) {
+    let last = null, p = el;
+    while (p && p !== document.body) {
+      if (getComputedStyle(p).position !== "static") last = p;
+      p = p.parentElement;
+    }
+    return last;
+  }
+
+  function liftOverlays() {
+    if (!state) return;
+    const dialogs = document.querySelectorAll('[role="dialog"], [role="alertdialog"], [aria-modal="true"]');
+    for (const d of dialogs) {
+      const top = liftableAncestor(d);
+      if (!top || isOursOrShell(top) || liftedOverlays.some((o) => o.el === top)) continue;
+      liftedOverlays.push({
+        el: top,
+        value: top.style.getPropertyValue("z-index"),
+        priority: top.style.getPropertyPriority("z-index"),
+      });
+      top.style.setProperty("z-index", String(Z_OVERLAY), "important");
+    }
+  }
+
+  function unliftOverlays() {
+    for (const { el, value, priority } of liftedOverlays) {
+      if (value) el.style.setProperty("z-index", value, priority);
+      else el.style.removeProperty("z-index");
+    }
+    liftedOverlays = [];
+  }
+
   function maximize() {
     if (state || !onAllowedPage()) return;
     const iframe = findArtifactIframe();
@@ -123,6 +169,7 @@
     document.documentElement.classList.add("cgn-noscroll");
 
     state = { iframe, patches, backdrop };
+    liftOverlays();
     syncButton();
   }
 
@@ -133,6 +180,7 @@
 
     iframe.classList.remove("cgn-max");
     unpatchAncestors(patches);
+    unliftOverlays();
     backdrop.remove();
     document.documentElement.classList.remove("cgn-noscroll");
     syncButton();
@@ -218,6 +266,7 @@
         restore();
         return;
       }
+      if (state) liftOverlays();
       syncButton();
     }, 250);
   }
@@ -226,12 +275,14 @@
     const t = m.target;
     if (button && (t === button || button.contains(t))) return true;
     if (state && state.backdrop && t === state.backdrop) return true;
+    if (liftedOverlays.some((o) => o.el === t || (o.el.contains && o.el.contains(t)))) return true;
     return false;
   }
 
   const pageObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
       if (!isOwnMutation(m)) {
+        if (state) liftOverlays();
         queueSync();
         return;
       }
